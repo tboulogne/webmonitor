@@ -8,6 +8,7 @@ Version 1.00
 
 
 Purpose
+
 The purpose of this document is to describe the web site monitoring software used by Ramblers-Webs. The software is used to try and spot if a web site has been hacked. It does this my checking and reporting what files have been changed. The owner of the site and the Ramblers-Webs administrators can then review these changes to see if any of them are suspect.
 Hacking
 

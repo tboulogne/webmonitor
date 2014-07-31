@@ -1,6 +1,6 @@
 <?php
 
-// start of config  version v1.00
+// start of config  version v1.01
 // $email - email address to send results
 // $domain - domain/account being scanned
 //
@@ -13,10 +13,13 @@
 //          except for those folders specified in the $skipFolders field
 //          
 // $skipFolders - skip the following folders, these should be defined relative to the $path value
-// if you are using Joomla (in folder www0x then it is recommended that you exclude these subfolders
-//     "public_html/www0X/tmp/","public_html/www0X/log/","public_html/www0X/cache/","public_html/www0X/administrator/cache/"
+// 
 // NOTE: end all subfolders with a / otherwise folders with similar names will also be excluded
-// If you are using a another CMS then you should consider which folders to exclude
+// If you are using a CMS then you should consider which folders to exclude
+// 
+// If you are using Joomla then specify the following item 
+// $joomlaFolders - specify the folders that contain Joomla.
+//              This will add the subfolders tmp,log,cache and administrator/cache to the $skipFolders item
 // 
 // $processExtensions - specify the file extensions that you wish to be checked, supply them in lower case.
 //      extensions are not treated as case sensitive so jpg will scan for both JPG and jpg files
@@ -29,8 +32,8 @@
 //      For Ramblers-webs sites it is recommended to use a value of P30D - thirty days 
 
 
-$email = "chris@somewhere.co.uk";
-$domain = "mywebsite.org.uk";
+$email = "chris@cevsystems.co.uk";
+$domain = "ramblers-webs.org.uk";
 
 
 $host = ini_get("mysqli.default_host");
@@ -42,6 +45,10 @@ $path = " " . $domain;
 $path = "D:Data/UniServerZ/www/";
 $skipFolders = Array(""); // scan all folders
 $skipFolders = Array("monitor/Detect Hacked Files via CRON_PHP_files/", "Joomla3/");
+$skipFolders= NULL;
+
+$joomlaFolders=NULL;
+$joomlaFolders=Array("public_html/www01","public_html/www03");
 $processExtensions = NULL; // process all file types
 $processExtensions = array("txt", "php", "jpg", "htm", "html", "cgi", "pdf", "ini", "htaccess");
 

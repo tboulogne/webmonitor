@@ -1,5 +1,6 @@
 <?php
-
+//error_reporting(E_ALL);
+//ini_set('display_errors', 1);
 // Code to scan a web site's account for changes in any of the files.
 // The code is adapted from Eyesite and another article on the web.
 // Author Chris Vaughan Derby & South Derbyshire Ramblers
@@ -8,8 +9,10 @@
 //
 // User options - all user options are contained in the config.php file
 //
-define("VERSION_NUMBER", "1.00");
-// version 1.00
+define("VERSION_NUMBER", "1.01");
+//  version 1.01
+//              Change to add in Joomla subfolders that should be ignored
+//  version 1.00
 //              Change to email title to make it easier to recognise , 
 //              if you have a few emails you will be able to sort them by domain
 // version 0.99
@@ -48,12 +51,25 @@ if (version_compare(PHP_VERSION, '5.3.0') >= 0) {
 // 	initialize
 require('config.php');
 
-If (isset($skipFolders)){
-    for ($i = 0; $i < count($skipFolders); ++$i) {
-        $skipFolders[$i]=str_replace("/", DIRECTORY_SEPARATOR, $skipFolders[$i]);
+if (isset($joomlaFolders)) {
+    foreach ($joomlaFolders as $value) {
+        if (!isset($skipFolders)) {
+            $skipFolders = Array($value . "/tmp/");
+        } else {
+            array_push($skipFolders, $value . "/tmp/");
+        }
+        array_push($skipFolders, $value . "/log/");
+        array_push($skipFolders, $value . "/cache/");
+        array_push($skipFolders, $value . "/administrator/cache/");
     }
 }
-$path=str_replace("/", DIRECTORY_SEPARATOR, $path);
+
+If (isset($skipFolders)) {
+    for ($i = 0; $i < count($skipFolders); ++$i) {
+        $skipFolders[$i] = str_replace("/", DIRECTORY_SEPARATOR, $skipFolders[$i]);
+    }
+}
+$path = str_replace("/", DIRECTORY_SEPARATOR, $path);
 
 $scan = new scan($host, $database, $user, $password, $domain);
 if ($scan->Connect()) {
@@ -231,7 +247,7 @@ class scan {
             return false;
         }
         foreach ($skipFolders as $value) {
-            if ($this->startsWith($subpath.DIRECTORY_SEPARATOR, $value) == true) {
+            if ($this->startsWith($subpath . DIRECTORY_SEPARATOR, $value) == true) {
                 return true;
             }
         }
@@ -408,9 +424,9 @@ class scan {
         $this->report.= $this->summaryReport();
         $send = $this->sendEmail($lastemailsent, $emailinterval);
         if ($this->total == 0) {
-            $title = "WebMonitor: ". $this->domain.'  Integrity Report v' . VERSION_NUMBER ;
+            $title = "WebMonitor: " . $this->domain . '  Integrity Report v' . VERSION_NUMBER;
         } else {
-            $title = "WebMonitor: ". $this->domain.'  Change Report (' . $this->total . ') v' . VERSION_NUMBER ;
+            $title = "WebMonitor: " . $this->domain . '  Change Report (' . $this->total . ') v' . VERSION_NUMBER;
         }
         $headers = "From: admin@" . $this->domain . "\r\n";
         $headers .= "Content-type: text/html\r\n";
@@ -555,5 +571,6 @@ class scan {
     }
 
 }
+
 ?>
 

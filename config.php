@@ -1,6 +1,6 @@
 <?php
 
-// start of config  version v1.02
+// start of config  version v1.01
 // $email - email address to send results
 // $domain - domain/account being scanned
 //

@@ -8,8 +8,11 @@
 //                      copyright 2014
 //
 // User options - all user options are contained in the config.php file
-//
-define("VERSION_NUMBER", "1.01");
+//  THIS VERSION WORKES WITH VeRSION 1.01 of the CONFIG file
+
+define("VERSION_NUMBER", "1.02");
+//  version 1.02
+//              Correction to error email
 //  version 1.01
 //              Change to add in Joomla subfolders that should be ignored
 //  version 1.00
@@ -41,15 +44,15 @@ define("VERSION_NUMBER", "1.01");
 
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
+// 	initialize
+require('config.php');
 if (version_compare(PHP_VERSION, '5.3.0') >= 0) {
     // echo 'I am at least PHP version 5.3.0, my version: ' . PHP_VERSION . "\n";
 } else {
-    echo 'You MUST be running on PHP version 5.3.0 or higher, running version: ' . PHP_VERSION . "\n";
-    die();
+    $text= 'You MUST be running on PHP version 5.3.0 or higher, running version: ' . PHP_VERSION . "\n";
+  	$mailed = mail($email, "WebMonitor: ERROR SCANNING " . $domain, $text); 
+	die();
 }
-
-// 	initialize
-require('config.php');
 
 if (isset($joomlaFolders)) {
     foreach ($joomlaFolders as $value) {
@@ -81,7 +84,7 @@ if ($scan->Connect()) {
     $scan = NULL;
 } else {
     $text = "Error in running hashscan.php for this domain, consult logfile";
-    $mailed = mail($email, "ERROR SCANNIN " . $domain, $text);
+    $mailed = mail($email, "WebMonitor: ERROR SCANNING " . $domain, $text);
 }
 
 class scan {

@@ -8,9 +8,12 @@
 //                      copyright 2014
 //
 // User options - all user options are contained in the config.php file
-//  THIS VERSION WORKES WITH VeRSION 1.01 of the CONFIG file
+//  THIS VERSION WORKES WITH VERSION 1.01 of the CONFIG file
 
-define("VERSION_NUMBER", "1.02");
+define("VERSION_NUMBER", "1.03");
+//  version 1.03
+//              Remove second error reporting code
+//              Add running time of 60 seconds
 //  version 1.02
 //              Correction to error email
 //  version 1.01
@@ -42,8 +45,6 @@ define("VERSION_NUMBER", "1.02");
 //              First release
 
 
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
 // 	initialize
 require('config.php');
 if (version_compare(PHP_VERSION, '5.3.0') >= 0) {
@@ -53,6 +54,8 @@ if (version_compare(PHP_VERSION, '5.3.0') >= 0) {
   	$mailed = mail($email, "WebMonitor: ERROR SCANNING " . $domain, $text); 
 	die();
 }
+
+set_time_limit(60);
 
 if (isset($joomlaFolders)) {
     foreach ($joomlaFolders as $value) {

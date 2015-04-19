@@ -38,19 +38,19 @@ $domain = "ramblers-webs.org.uk";
 
 $host = ini_get("mysqli.default_host");
 $database = "monitorv01";
-$user = "monitor";
-$password = "password";
+$user = "admin";
+$password = "admin";
 
 $path = " " . $domain;
 $path = "D:Data/UniServerZ/www/";
-$skipFolders = Array(""); // scan all folders
-$skipFolders = Array("monitor/Detect Hacked Files via CRON_PHP_files/", "Joomla3/");
+$skipFolders = [""]; // scan all folders
+$skipFolders = ["monitor/Detect Hacked Files via CRON_PHP_files/", "Joomla3/"];
 $skipFolders= NULL;
 
 $joomlaFolders=NULL;
-$joomlaFolders=Array("*");
+$joomlaFolders=  ["Joom*"];
 $processExtensions = NULL; // process all file types
-$processExtensions = array("txt", "php", "jpg", "htm", "html", "cgi", "pdf", "ini", "htaccess");
+$processExtensions = ["txt", "php", "jpg", "htm", "html", "cgi", "pdf", "ini", "htaccess"];
 
 $emailinterval = "P2D";
 // end of config

@@ -1,6 +1,8 @@
 <?php
-//error_reporting(E_ALL);
-//ini_set('display_errors', 1);
+
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+set_time_limit(120);
 // Code to scan a web site's account for changes in any of the files.
 // The code is adapted from Eyesite and another article on the web.
 // Author Chris Vaughan Derby & South Derbyshire Ramblers
@@ -10,7 +12,9 @@
 // User options - all user options are contained in the config.php file
 //  THIS VERSION WORKES WITH VERSION 1.01 of the CONFIG file
 
-define("VERSION_NUMBER", "1.03");
+define("VERSION_NUMBER", "1.04");
+//  version 1.04
+//             Addition of use of wild char * in excluded folders
 //  version 1.03
 //              Remove second error reporting code
 //              Add running time of 60 seconds
@@ -43,19 +47,16 @@ define("VERSION_NUMBER", "1.03");
 //              fix to get the email anyway option working correctly
 // version 0.9 - 23 June 2014
 //              First release
-
-
 // 	initialize
+
 require('config.php');
 if (version_compare(PHP_VERSION, '5.3.0') >= 0) {
-    // echo 'I am at least PHP version 5.3.0, my version: ' . PHP_VERSION . "\n";
+// echo 'I am at least PHP version 5.3.0, my version: ' . PHP_VERSION . "\n";
 } else {
-    $text= 'You MUST be running on PHP version 5.3.0 or higher, running version: ' . PHP_VERSION . "\n";
-  	$mailed = mail($email, "WebMonitor: ERROR SCANNING " . $domain, $text); 
-	die();
+    $text = 'You MUST be running on PHP version 5.3.0 or higher, running version: ' . PHP_VERSION . "\n";
+    $mailed = mail($email, "WebMonitor: ERROR SCANNING " . $domain, $text);
+    die();
 }
-
-set_time_limit(60);
 
 if (isset($joomlaFolders)) {
     foreach ($joomlaFolders as $value) {
@@ -110,11 +111,13 @@ class scan {
     //const SQL_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"; // strftime() format
 
     function __construct($host, $database, $user, $password, $domain) {
+
         $this->host = $host;
         $this->database = $database;
         $this->user = $user;
         $this->password = $password;
         $this->domain = $domain;
+
         $this->report = "";
         $this->logfile = fopen("logfile.log", "w") or die("Unable to open file!");
         $this->Msg("Logfile created");
@@ -209,6 +212,9 @@ class scan {
             }
             if ($this->skipThisFolder($subpath, $isDot, $skipFolders)) {
                 $process = false;
+                if (!$isDot) {
+                    $this->Msg("EXCLUDED: " . $filename);
+                }
             }
             if ($process) {
                 $this->process_file($filename);
@@ -252,12 +258,37 @@ class scan {
         if (empty($skipFolders)) {
             return false;
         }
+        if (strpos($subpath, '\tmp'.DIRECTORY_SEPARATOR) > 0) {
+            $ok = 1;
+        }
         foreach ($skipFolders as $value) {
-            if ($this->startsWith($subpath . DIRECTORY_SEPARATOR, $value) == true) {
+            $ok = $this->isFolderSame($subpath . DIRECTORY_SEPARATOR, $value);
+            if ($ok) {
                 return true;
             }
         }
         return false;
+    }
+
+    function isFolderSame($folder, $skipfolder) {
+        $parts = explode(DIRECTORY_SEPARATOR, $folder);
+        $skipparts = explode(DIRECTORY_SEPARATOR, $skipfolder);
+        unset($parts[count($parts) - 1]);
+        unset($skipparts[count($skipparts) - 1]);
+        if (count($parts) >= count($skipparts)) {
+            foreach ($skipparts as $key => $value) {
+                //  echo $value . "  " . $key . "  " . $parts[$key];
+                if ($value == "*") {
+                    $value = $parts[$key];
+                }
+                If ($value != $parts[$key]) {
+                    return false;
+                }
+            }
+            return true;
+        } else {
+            return false;
+        }
     }
 
     function startsWith($haystack, $needle) {
@@ -268,6 +299,7 @@ class scan {
 // Process one file
 // Returns 0 if no errors, 1 for a file error, or 2 for a database error
 //
+
     function process_file($filepath) {
         $utf8_filepath = utf8_encode($filepath);
 
@@ -293,7 +325,7 @@ class scan {
         $norows = $res->num_rows;
         if ($norows == 0) {
             $query = "Insert into baseline (filepath, hash, state,  date_added, date_checked)
-			values ('" . addslashes($filepath) . "', '$hash', " . self::STATE_NEW . ", NOW(), 0)";
+			values ('" . addslashes($filepath) . "', '$hash', " . self ::STATE_NEW . ", NOW(), 0)";
             $result = $this->mysqli->query($query);
             if ($result === false) {
                 $this->ErrorMsg("Unable to add NEW entry for " . $filepath);
@@ -304,7 +336,7 @@ class scan {
         }
 
 // here when the file is in the database
-// if it already has a problem flagged, leave it alone
+        // if it already has a problem flagged, leave it alone
         $datarow = $res->fetch_array();
         if ($datarow["state"] != self::STATE_RUNNING) {
             $this->Msg("File already has state set: " . $filepath);
@@ -420,7 +452,6 @@ class scan {
     function emailResults($email, $emailinterval) {
         $tested = $this->getLastRunDate();
         $this->report .= "<p>Last tested $tested.</p>" . PHP_EOL;
-
         $lastemailsent = $this->getLastEmailSentRunDate();
         $this->report .= "<p>Last email sent $lastemailsent.</p>" . PHP_EOL;
 
@@ -469,7 +500,7 @@ class scan {
     }
 
     function sendEmailAnyway($lastemailsent, $emailinterval) {
-        // return boolean if we last sent email outside interval
+// return boolean if we last sent email outside interval
         $emailreport = false;
         $today = new DateTime(NULL);
         $date = new DateTime($lastemailsent);
@@ -508,14 +539,14 @@ class scan {
             if ($this->changed > 0) {
                 $text.="<p>     CHANGED files</p>" . PHP_EOL;
                 $text.="<ul>" . PHP_EOL;
-                $text.=$this->listFilesInState(self::STATE_CHANGED);
+                $text .= $this->listFilesInState(self::STATE_CHANGED);
                 $text.="</ul>" . PHP_EOL;
             }
             if ($this->deleted > 0) {
                 $text.="<p>     DELETED files</p>" . PHP_EOL;
-                $text.="<ul>" . PHP_EOL;
+                $text .= "<ul>" . PHP_EOL;
                 $text.= $this->listFilesInState(self::STATE_DELETED);
-                $text.="</ul>" . PHP_EOL;
+                $text .= "</ul>" . PHP_EOL;
             }
         }
         $text .= "<p> </p>" . PHP_EOL;
@@ -577,6 +608,3 @@ class scan {
     }
 
 }
-
-?>
-

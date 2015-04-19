@@ -48,7 +48,7 @@ $skipFolders = Array("monitor/Detect Hacked Files via CRON_PHP_files/", "Joomla3
 $skipFolders= NULL;
 
 $joomlaFolders=NULL;
-$joomlaFolders=Array("public_html/www01","public_html/www03");
+$joomlaFolders=Array("*");
 $processExtensions = NULL; // process all file types
 $processExtensions = array("txt", "php", "jpg", "htm", "html", "cgi", "pdf", "ini", "htaccess");
 

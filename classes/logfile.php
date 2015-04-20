@@ -8,6 +8,7 @@
 class Logfile {
 
     private static $logfile;
+    private static $noerrors=0;
 
     static function create($name) {
         self::$logfile = fopen($name, "w") or die("Unable to open logfile file!");
@@ -26,15 +27,13 @@ class Logfile {
     }
 
     static function writeError($text) {
+        self::$noerrors+=1;
         self::writeWhen(" ERROR: " . $text);
     }
-     function errorMsg($text) {
-        self::writeWhen("  ERROR: " . $text . "\n");
-        $today = new DateTime(NULL);
-        $when = $today->format('Y-m-d H:i:s');
-        echo "<p>" . $when . "  ERROR: " . $text . "</p>" . PHP_EOL;
+    static function getNoErrors(){
+        return self::$noerrors;
     }
-
+   
     static function close() {
         if (isset(self::$logfile)) {
             fclose(self::$logfile);

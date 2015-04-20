@@ -91,7 +91,7 @@ class Scan {
         return true;
     }
 
-    Function skipThisFolder($subpath,  $skipFolders) {
+    Function skipThisFolder($subpath, $skipFolders) {
         if (!isset($subpath)) {
             return false;
         }
@@ -169,8 +169,13 @@ class Scan {
         return $text;
     }
 
-    function emailResults($email, $emailinterval) {
+    function emailResults($email, $emailinterval, $running) {
         $mailed = false;
+        $title = "WebMonitor: ";
+        if ($running) {
+            $this->report.="<h2>ERROR</h2><p>Last scan failed to complete, displaying results from last scan</p>";
+            $title .= "ERROR: ";
+        }
         $tested = $this->db->getLastRunDate();
         $this->report .= "<p>Last tested $tested.</p>" . PHP_EOL;
         $lastemailsent = $this->db->getLastEmailSentRunDate();
@@ -178,15 +183,19 @@ class Scan {
 
 //	E-Mail Results
 // 	display discrepancies
-        $send = $this->sendEmail($lastemailsent, $emailinterval);
+        $send = $this->sendEmail($lastemailsent, $emailinterval, $running);
         $this->report.= $this->db->summaryReport();
 
         echo $this->report;
         if ($send) {
+            $witherrors = " ";
+            if (Logfile::getNoErrors() > 0) {
+                $witherrors = " (with errors) ";
+            }
             if ($this->db->getTotals() === 0) {
-                $title = "WebMonitor: " . $this->domain . '  Integrity Report v' . VERSION_NUMBER;
+                $title .= $witherrors . $this->domain . '  Integrity Report v' . VERSION_NUMBER;
             } else {
-                $title = "WebMonitor: " . $this->domain . '  Change Report (' . $this->db->getTotals() . ') v' . \VERSION_NUMBER;
+                $title .= $this->domain . '  Change Report (' . $this->db->getTotals() . ') v' . \VERSION_NUMBER;
             }
             $headers = "From: admin@" . $this->domain . "\r\n";
             $headers .= "Content-type: text/html\r\n";
@@ -198,11 +207,17 @@ class Scan {
         $this->db->recordtestDate($mailed);
     }
 
-    function sendEmail($lastemailsent, $emailinterval) {
+    function sendEmail($lastemailsent, $emailinterval, $running) {
         $emailreport = false;
         If ($this->db->getTotals() === 0) {
             $emailreport = $this->sendEmailAnyway($lastemailsent, $emailinterval);
         } else {
+            $emailreport = true;
+        }
+        if (Logfile::getNoErrors() > 0) {
+            $emailreport = true;
+        }
+        if ($running) {
             $emailreport = true;
         }
         return $emailreport;

@@ -53,7 +53,7 @@ define("VERSION_NUMBER", "2.00");
 //              First release
 // 	initialize
 
-if (file_exists('config.php')){
+if (file_exists('config.php')) {
     require('config.php');
 } else {
     require('config_master.php');
@@ -91,15 +91,23 @@ $path = str_replace("/", DIRECTORY_SEPARATOR, $path);
 
 $dbconfig = new Dbconfig($host, $database, $user, $password);
 $scan = new Scan($dbconfig, $domain);
+// check to see if last scan completed correctly
+
+$running = file_exists('scanrunning.test');
+$scanningFile = fopen('scanrunning.test', "w") or die("Unable to create scanrunning.text file!");
+fclose($scanningFile);
+
 if ($scan->Connect()) {
 
 //	Last Hash Scan
-    $scan->scanFiles($path, $skipFolders, $processExtensions);
-    $scan->emailResults($email, $emailinterval);
+    if ($running === false) {
+        $scan->scanFiles($path, $skipFolders, $processExtensions);
+    } 
+    $scan->emailResults($email, $emailinterval, $running);
     $scan->deleteOldTestedRecords();
     $scan = NULL;
 } else {
     $text = "Error in running hashscan.php for this domain, consult logfile";
     $mailed = mail($email, "WebMonitor: ERROR SCANNING " . $domain, $text);
 }
-
+unlink('scanrunning.test');

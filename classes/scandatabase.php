@@ -37,7 +37,7 @@ class Scandatabase extends Database {
             if ($ok) {
                 Logfile::writeWhen("Table 'baseline' created");
             } else {
-                Logfile::errorMsg("Table creation 'baseline' FAILED");
+                Logfile::writeError("Table creation 'baseline' FAILED");
             }
         }
         if (!parent::tableExists('tested')) {
@@ -53,7 +53,7 @@ class Scandatabase extends Database {
             if ($ok) {
                 Logfile::writeWhen("Table 'tested' created");
             } else {
-                Logfile::errorMsg("Table creation 'tested' FAILED");
+                Logfile::writeError("Table creation 'tested' FAILED");
             }
         }
     }
@@ -67,13 +67,13 @@ class Scandatabase extends Database {
         $utf8_filepath = utf8_encode($filepath);
 
         if (!is_readable($filepath)) {
-            Logfile::errorMsg("Unreadable file: $filepath");
+            Logfile::writeError("Unreadable file: $filepath");
             return 1;
         }
 
         $hash = hash_file("md5", $filepath);
         if (!$hash) {
-            Logfile::errorMsg("Unable to calculate hash for: $filepath");
+            Logfile::writeError("Unable to calculate hash for: $filepath");
             return 1;
         }
 
@@ -92,7 +92,7 @@ class Scandatabase extends Database {
 			values ('" . addslashes($filepath) . "', '$hash', " . self ::STATE_NEW . ", NOW(), 0)";
             $ok = parent::runQuery($query);
             if (!$ok) {
-                Logfile::errorMsg("Unable to add NEW entry for " . $filepath);
+                Logfile::writeError("Unable to add NEW entry for " . $filepath);
                 return 2;
             }
             Logfile::writeWhen("NEW: " . $filepath);
@@ -113,7 +113,7 @@ class Scandatabase extends Database {
             $query = "Update baseline Set state = " . self::STATE_OK . ", date_checked = NOW() Where filepath = '" . addslashes($filepath) . "'";
             $ok = parent::runQuery($query);
             if (!$ok) {
-                Logfile::errorMsg("Unable to reset entry, to OK, for " . $filepath);
+                Logfile::writeError("Unable to reset entry, to OK, for " . $filepath);
                 return 2;
             }
             Logfile::writeWhen("OK: " . $filepath);
@@ -125,7 +125,7 @@ class Scandatabase extends Database {
         $query = "UPDATE `baseline` SET `state`=" . self::STATE_CHANGED . ",`hash` = '" . $hash . "' WHERE `filepath` = '" . addslashes($filepath) . "'";
         $ok = parent::runQuery($query);
         if (!$ok) {
-            Logfile::errorMsg("Unable to add CHANGED entry for " . $filepath);
+            Logfile::writeError("Unable to add CHANGED entry for " . $filepath);
             return 2;
         }
         Logfile::writeWhen("CHANGED: " . $filepath);
@@ -136,7 +136,7 @@ class Scandatabase extends Database {
         $query = "Update baseline Set state = " . self::STATE_RUNNING;
         $ok = parent::runQuery($query);
         if (!$ok) {
-            Logfile::errorMsg("Unable to set Running tags");
+            Logfile::writeError("Unable to set Running tags");
             return false;
         }
         return true;
@@ -159,7 +159,7 @@ class Scandatabase extends Database {
         $query = "Update baseline Set state = " . self::STATE_DELETED . " Where state=" . self::STATE_RUNNING;
         $ok = parent::runQuery($query);
         if (!$ok) {
-            Logfile::errorMsg("Unable to set Deleted state");
+            Logfile::writeError("Unable to set Deleted state");
             return false;
         }
         return true;
@@ -169,7 +169,7 @@ class Scandatabase extends Database {
         $query = "DELETE FROM baseline WHERE state=" . self::STATE_DELETED;
         $ok = parent::runQuery($query);
         if (!$ok) {
-            Logfile::errorMsg("Unable to remove Deleted records");
+            Logfile::writeError("Unable to remove Deleted records");
             return false;
         }
         return true;
@@ -205,6 +205,9 @@ class Scandatabase extends Database {
 
     function summaryReport() {
         $text = "";
+        if (Logfile::getNoErrors()>0){
+            $text.="<h2>WARNING</h2><p>Errors occurred during the scanning process, see error log on server for details</p>";
+        }
         If ($this->total === 0) {
             $text .= "<p>File structure has NOT changed.</p>" . PHP_EOL;
         } else {
@@ -251,7 +254,7 @@ class Scandatabase extends Database {
         $formatdate = $date->format('Y-m-d');
         $ok = parent::runQuery("DELETE FROM tested WHERE tested < '$formatdate'");
         if (!$ok) {
-            Logfile::errorMsg('Unable to delete old records in tested table(' . parent::error());
+            Logfile::writeError('Unable to delete old records in tested table(' . parent::error());
         }
     }
 
@@ -263,7 +266,7 @@ class Scandatabase extends Database {
             $row = $result->fetch_row();
             $tested = $row[0];
         } else {
-            Logfile::errorMsg('Unable to retrieve last test date(' . parent::error());
+            Logfile::writeError('Unable to retrieve last test date(' . parent::error());
         }
         Logfile::writeWhen("Last scan date " . $tested);
         return $tested;

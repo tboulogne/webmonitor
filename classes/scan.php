@@ -13,14 +13,11 @@ class Scan {
         $this->domain = $domain;
 
         $this->report = "";
-        Logfile::create("logfile.log");
-        Logfile::writeWhen("Logfile created");
         $this->report = "<p>Report of changes to domain <b>" . $this->domain . "</b></p>" . PHP_EOL;
     }
 
     function __destruct() {
-        Logfile::writeWhen("Logfile closed");
-        Logfile::close();
+        
     }
 
     function Connect() {
@@ -41,7 +38,7 @@ class Scan {
         }
         $i = 0;
         $no = 0;
-
+        $reset = 0;
         $dir = new RecursiveDirectoryIterator($path);
         $iter = new RecursiveIteratorIterator($dir);
         while ($iter->valid()) {
@@ -50,12 +47,12 @@ class Scan {
             $isDot = $iter->isDot();
             $filename = $iter->key();
             $extension = $iter->getExtension();
-            if ($this->skipThisFile($extension, $processExtensions)) {
-                $process = false;
-            }
             if ($isDot) {
                 $process = false;
             } else {
+                if ($this->skipThisFile($extension, $processExtensions)) {
+                    $process = false;
+                }
                 if ($this->skipThisFolder($subpath, $skipFolders)) {
                     $process = false;
                     Logfile::writeWhen("EXCLUDED: " . $filename);
@@ -68,10 +65,14 @@ class Scan {
                 $no+=1;
                 if ($i >= 500) {
                     echo $no . " - files processed<br/>";
-                    set_time_limit(20);
                     $i = 0;
                 }
             }
+            if ($reset > 1000) {
+                set_time_limit(30);
+                $reset = 0;
+            }
+            $reset += 1;
             $iter->next();
         }
 // done, now set any items that are not changed to Deleted
@@ -169,13 +170,23 @@ class Scan {
         return $text;
     }
 
-    function emailResults($email, $emailinterval, $running) {
+    function emailResults($email, $emailinterval, $alreadyRunning) {
         $mailed = false;
         $title = "WebMonitor: ";
-        if ($running) {
+        if ($alreadyRunning) {
             $this->report.="<h2>ERROR</h2><p>Last scan failed to complete, displaying results from last scan</p>";
             $title .= "ERROR: ";
         }
+        $witherrors = " ";
+        if (Logfile::getNoErrors() > 0) {
+            $witherrors = " (with errors) ";
+        }
+        if ($this->db->getTotals() === 0) {
+            $title .= $witherrors . $this->domain . '  Integrity Report v' . VERSION_NUMBER;
+        } else {
+            $title .= $this->domain . '  Change Report (' . $this->db->getTotals() . ') v' . \VERSION_NUMBER;
+        }
+        echo $title;
         $tested = $this->db->getLastRunDate();
         $this->report .= "<p>Last tested $tested.</p>" . PHP_EOL;
         $lastemailsent = $this->db->getLastEmailSentRunDate();
@@ -183,31 +194,27 @@ class Scan {
 
 //	E-Mail Results
 // 	display discrepancies
-        $send = $this->sendEmail($lastemailsent, $emailinterval, $running);
+        $send = $this->sendEmail($lastemailsent, $emailinterval, $alreadyRunning);
+
         $this->report.= $this->db->summaryReport();
 
         echo $this->report;
         if ($send) {
-            $witherrors = " ";
-            if (Logfile::getNoErrors() > 0) {
-                $witherrors = " (with errors) ";
-            }
-            if ($this->db->getTotals() === 0) {
-                $title .= $witherrors . $this->domain . '  Integrity Report v' . VERSION_NUMBER;
-            } else {
-                $title .= $this->domain . '  Change Report (' . $this->db->getTotals() . ') v' . \VERSION_NUMBER;
-            }
             $headers = "From: admin@" . $this->domain . "\r\n";
             $headers .= "Content-type: text/html\r\n";
             $mailed = mail($email, $title, $this->report, $headers);
             if (!$mailed) {
                 Logfile::writeError("Email failed to be sent");
+            } else {
+                Logfile::writeWhen("Email sent");
             }
+        } else {
+            Logfile::writeWhen("Email not required");
         }
         $this->db->recordtestDate($mailed);
     }
 
-    function sendEmail($lastemailsent, $emailinterval, $running) {
+    function sendEmail($lastemailsent, $emailinterval, $alreadyRunning) {
         $emailreport = false;
         If ($this->db->getTotals() === 0) {
             $emailreport = $this->sendEmailAnyway($lastemailsent, $emailinterval);
@@ -217,7 +224,7 @@ class Scan {
         if (Logfile::getNoErrors() > 0) {
             $emailreport = true;
         }
-        if ($running) {
+        if ($alreadyRunning) {
             $emailreport = true;
         }
         return $emailreport;

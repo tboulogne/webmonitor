@@ -65,6 +65,10 @@ class Scandatabase extends Database {
 
     function process_file($filepath) {
         $utf8_filepath = utf8_encode($filepath);
+        // check if $filename is longer than 255
+        if (strlen($filepath) >= 255) {
+            Logfile::writeError("Filename is longer than 255 chars");
+        }
 
         if (!is_readable($filepath)) {
             Logfile::writeError("Unreadable file: $filepath");
@@ -156,7 +160,7 @@ class Scandatabase extends Database {
         } else {
             Logfile::writeWhen("EREOR getting deleted file name: " . parent::error());
         }
-        $query = "Update baseline Set state = " . self::STATE_DELETED . " Where state=" . self::STATE_RUNNING;
+        $query = "Update baseline Set state = '" . self::STATE_DELETED . "' Where state = '" . self::STATE_RUNNING . "'";
         $ok = parent::runQuery($query);
         if (!$ok) {
             Logfile::writeError("Unable to set Deleted state");
@@ -172,12 +176,16 @@ class Scandatabase extends Database {
             Logfile::writeError("Unable to remove Deleted records");
             return false;
         }
+        Logfile::writeWhen("Deleted records removed");
         return true;
     }
 
-    function listFilesInState($state) {
+    function listFilesInState($state, $no) {
         $text = "";
-        $ok = parent::runQuery("SELECT filepath FROM baseline WHERE state='" . $state . "'");
+        if ($no > 2500) {
+            $text.="<p>First 2500 files displayed</p>";
+        }
+        $ok = parent::runQuery("SELECT filepath FROM baseline WHERE state='" . $state . "' LIMIT 2500");
         if ($ok) {
             $result = parent::getResult();
             while ($row = $result->fetch_row()) {
@@ -205,7 +213,7 @@ class Scandatabase extends Database {
 
     function summaryReport() {
         $text = "";
-        if (Logfile::getNoErrors()>0){
+        if (Logfile::getNoErrors() > 0) {
             $text.="<h2>WARNING</h2><p>Errors occurred during the scanning process, see error log on server for details</p>";
         }
         If ($this->total === 0) {
@@ -223,25 +231,25 @@ class Scandatabase extends Database {
             if ($this->new > 0) {
                 $text.="<p>     NEW files</p>" . PHP_EOL;
                 $text.="<ul>" . PHP_EOL;
-                $text.=$this->listFilesInState(self::STATE_NEW);
+                $text.=$this->listFilesInState(self::STATE_NEW, $this->new);
                 $text.="</ul>" . PHP_EOL;
             }
             if ($this->changed > 0) {
                 $text.="<p>     CHANGED files</p>" . PHP_EOL;
                 $text.="<ul>" . PHP_EOL;
-                $text .= $this->listFilesInState(self::STATE_CHANGED);
+                $text .= $this->listFilesInState(self::STATE_CHANGED, $this->changed);
                 $text.="</ul>" . PHP_EOL;
             }
             if ($this->deleted > 0) {
                 $text.="<p>     DELETED files</p>" . PHP_EOL;
                 $text .= "<ul>" . PHP_EOL;
-                $text.= $this->listFilesInState(self::STATE_DELETED);
+                $text.= $this->listFilesInState(self::STATE_DELETED, $this->deleted);
                 $text .= "</ul>" . PHP_EOL;
             }
         }
         $text .= "<p> </p>" . PHP_EOL;
         $text .= "<p> </p>" . PHP_EOL;
-        $text .= "<p>PHP version: " . PHP_VERSION . "  Monitor system version: " . VERSION_NUMBER . "</p>" . PHP_EOL;
+        $text .= "<p>PHP version: " . PHP_VERSION . "  Web Monitor version: " . VERSION_NUMBER . "</p>" . PHP_EOL;
         $text .= "<p>---------------------------------</p>" . PHP_EOL;
         return $text;
     }

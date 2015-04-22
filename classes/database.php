@@ -32,7 +32,7 @@ class Database {
         if ($this->mysqli->connect_error) {
             $this->status = 'Error connecting to database (' . $this->mysqli->connect_errno . ') '
                     . $this->mysqli->connect_error;
-
+            Logfile::writeError($this->status);
             $this->connected = False;
             return false;
         } else {
@@ -43,7 +43,7 @@ class Database {
     }
 
     function error() {
-        return $this->mysqli->error." (".$this->mysqli->errno.")";
+        return $this->mysqli->error . " (" . $this->mysqli->errno . ")";
     }
 
     function createTables($sql) {
@@ -56,7 +56,7 @@ class Database {
                 if ($res) {
                     //$this->Msg("Table 'baseline' created");
                 } else {
-                    echo "SQL failed " . $value . " Error: " . $this->error();
+                    Logfile::writeError("SQL failed " . $value . " Error: " . $this->error());
                 }
             }
         }
@@ -87,6 +87,7 @@ class Database {
         $query.=self::createValues($values);
         $result = $this->mysqli->query($query);
         if ($result === false) {
+            Logfile::writeError($this->error());
             return false;
         }
         return true; // we're done for this file
@@ -94,7 +95,7 @@ class Database {
 
     function tableExists($table) {
         $res = $this->mysqli->Query("SHOW TABLES LIKE '" . $table . "'");
-      return $res->num_rows > 0;
+        return $res->num_rows > 0;
     }
 
     function closeConnection() {
@@ -124,7 +125,8 @@ class Database {
         $out = substr($out, 0, -3) . ") ";
         return $out;
     }
-    function escapeString($text){
+
+    function escapeString($text) {
         return $this->mysqli->escape_string($text);
     }
 

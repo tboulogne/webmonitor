@@ -14,7 +14,9 @@ set_time_limit(30);
 // User options - all user options are contained in the config.php file
 //  THIS VERSION WORKES WITH VERSION 1.01 of the CONFIG file
 
-define("VERSION_NUMBER", "2.00");
+define("VERSION_NUMBER", "2.01");
+//  version 2.01
+//             check if already running, check filename length, bug fixes
 //  version 2.00 
 //             change to coding to be use classes and wild cards corrently
 //  version 1.04
@@ -53,6 +55,7 @@ define("VERSION_NUMBER", "2.00");
 //              First release
 // 	initialize
 
+
 if (file_exists('config.php')) {
     require('config.php');
 } else {
@@ -60,6 +63,8 @@ if (file_exists('config.php')) {
 }
 
 require('classes/autoload.php');
+Logfile::create("logfile.log");
+Logfile::writeWhen("Logfile created");
 
 if (version_compare(PHP_VERSION, '5.4.0') >= 0) {
 // echo 'I am at least PHP version 5.4.0, my version: ' . PHP_VERSION . "\n";
@@ -67,6 +72,21 @@ if (version_compare(PHP_VERSION, '5.4.0') >= 0) {
     $text = 'You MUST be running on PHP version 5.4.0 or higher, running version: ' . PHP_VERSION . "\n";
     $mailed = mail($email, "WebMonitor: ERROR SCANNING " . $domain, $text);
     die();
+}
+$appStatus = new Isapprunning();
+$status = $appStatus->check();
+
+$alreadyRunning = false;
+if ($status === NULL) {
+    $alreadyRunning = false;
+} else {
+    $timeperiod = new DateInterval("PT10M");
+    if ($status > $timeperiod) {
+        $alreadyRunning = true;
+    } else {
+        // too close to last run about
+        die("Application run is too soon after previous execution");
+    }
 }
 
 if (isset($joomlaFolders)) {
@@ -93,21 +113,20 @@ $dbconfig = new Dbconfig($host, $database, $user, $password);
 $scan = new Scan($dbconfig, $domain);
 // check to see if last scan completed correctly
 
-$running = file_exists('scanrunning.test');
-$scanningFile = fopen('scanrunning.test', "w") or die("Unable to create scanrunning.text file!");
-fclose($scanningFile);
-
 if ($scan->Connect()) {
 
 //	Last Hash Scan
-    if ($running === false) {
+    if ($alreadyRunning === false) {
         $scan->scanFiles($path, $skipFolders, $processExtensions);
-    } 
-    $scan->emailResults($email, $emailinterval, $running);
+    }
+    set_time_limit(30);
+    $scan->emailResults($email, $emailinterval, $alreadyRunning);
     $scan->deleteOldTestedRecords();
     $scan = NULL;
 } else {
     $text = "Error in running hashscan.php for this domain, consult logfile";
     $mailed = mail($email, "WebMonitor: ERROR SCANNING " . $domain, $text);
 }
-unlink('scanrunning.test');
+Logfile::writeWhen("Logfile closed");
+Logfile::close();
+$appStatus->finish();

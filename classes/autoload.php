@@ -22,6 +22,6 @@ function __autoload($class_name) {
     if (file_exists($file)) {
         require_once( $file );
     } else {
-        echo "Unable to find class file: " . $file;
+        Logfile::writeError("Unable to find class file: " . $file);
     }
 }

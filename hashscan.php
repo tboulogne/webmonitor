@@ -14,7 +14,9 @@ set_time_limit(30);
 // User options - all user options are contained in the config.php file
 //  THIS VERSION WORKES WITH VERSION 1.01 of the CONFIG file
 
-define("VERSION_NUMBER", "2.01");
+define("VERSION_NUMBER", "2.02");
+//  version 2.02
+//             recode directory iteration to make it quicker
 //  version 2.01
 //             check if already running, check filename length, bug fixes
 //  version 2.00 
@@ -85,7 +87,7 @@ if ($status === NULL) {
         $alreadyRunning = true;
     } else {
         // too close to last run about
-        die("Application run is too soon after previous execution");
+        die("Application execution is too soon after previous run");
     }
 }
 
@@ -102,20 +104,11 @@ if (isset($joomlaFolders)) {
     }
 }
 
-If (isset($skipFolders)) {
-    for ($i = 0; $i < count($skipFolders); ++$i) {
-        $skipFolders[$i] = str_replace("/", DIRECTORY_SEPARATOR, $skipFolders[$i]);
-    }
-}
-$path = str_replace("/", DIRECTORY_SEPARATOR, $path);
-
 $dbconfig = new Dbconfig($host, $database, $user, $password);
 $scan = new Scan($dbconfig, $domain);
-// check to see if last scan completed correctly
 
 if ($scan->Connect()) {
-
-//	Last Hash Scan
+    // check to see if last scan completed correctly
     if ($alreadyRunning === false) {
         $scan->scanFiles($path, $skipFolders, $processExtensions);
     }

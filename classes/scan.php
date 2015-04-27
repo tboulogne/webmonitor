@@ -9,7 +9,7 @@ class Scan {
 
     function __construct($dbconfig, $domain) {
 
-        $this->db = new Scandatabase($dbconfig);
+        $this->db = new ScanDatabase($dbconfig);
         $this->domain = $domain;
 
         $this->report = "";
@@ -36,111 +36,17 @@ class Scan {
         If ($ok == false) {
             return;
         }
-        $i = 0;
-        $no = 0;
-        $reset = 0;
-        $dir = new RecursiveDirectoryIterator($path);
-        $iter = new RecursiveIteratorIterator($dir);
-        while ($iter->valid()) {
-            $process = true;
-            $subpath = $iter->getSubPath();
-            $isDot = $iter->isDot();
-            $filename = $iter->key();
-            $extension = $iter->getExtension();
-            if ($isDot) {
-                $process = false;
-            } else {
-                if ($this->skipThisFile($extension, $processExtensions)) {
-                    $process = false;
-                }
-                if ($this->skipThisFolder($subpath, $skipFolders)) {
-                    $process = false;
-                    Logfile::writeWhen("EXCLUDED: " . $filename);
-                }
-            }
-
-            if ($process) {
-                $this->db->process_file($filename);
-                $i+=1;
-                $no+=1;
-                if ($i >= 500) {
-                    echo $no . " - files processed<br/>";
-                    $i = 0;
-                }
-            }
-            if ($reset > 1000) {
-                set_time_limit(30);
-                $reset = 0;
-            }
-            $reset += 1;
-            $iter->next();
-        }
-// done, now set any items that are not changed to Deleted
-
+        $iter = new ScanIterator($path, 1000);
+        $iter->addExtensions($processExtensions);
+        $iter->addFolders($skipFolders);
+        $iter->process($this, "processFile");
         $this->db->setDeleted();
-        $this->report.="Total number of files scanned " . $no;
+        $this->report.="Total number of files scanned " . $iter->getNoProcessed();
     }
 
-    function skipThisFile($extension, $processExtensions) {
-        $extlower = strtolower($extension);
-        if (empty($processExtensions)) {
-            return false;
-        }
-        if (in_array($extlower, $processExtensions)) {
-            return false;
-        }
-        return true;
-    }
-
-    Function skipThisFolder($subpath, $skipFolders) {
-        if (!isset($subpath)) {
-            return false;
-        }
-        if ($subpath === "") {
-            return false;
-        }
-
-        if (empty($skipFolders)) {
-            return false;
-        }
-        if (strpos($subpath, '\tmp' . DIRECTORY_SEPARATOR) > 0) {
-            $ok = 1;
-        }
-        foreach ($skipFolders as $value) {
-            $ok = $this->isFolderSame($subpath . DIRECTORY_SEPARATOR, $value);
-            if ($ok) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    function isFolderSame($folder, $skipfolder) {
-        $parts = explode(DIRECTORY_SEPARATOR, $folder);
-        $skipparts = explode(DIRECTORY_SEPARATOR, $skipfolder);
-        unset($parts[count($parts) - 1]);
-        unset($skipparts[count($skipparts) - 1]);
-        if (count($parts) >= count($skipparts)) {
-            foreach ($skipparts as $key => $value) {
-                //  echo $value . "  " . $key . "  " . $parts[$key];
-                if (!fnmatch($value, $parts[$key])) {
-                    return false;
-                }
-                //  if ($value == "*") {
-                //      $value = $parts[$key];
-                //  }
-                //  If ($value != $parts[$key]) {
-                //      return false;
-                //  }
-            }
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    function startsWith($haystack, $needle) {
-        return $needle === "" || strpos($haystack, $needle) === 0;
+    function processFile($basepath,$filename) {
+        //echo $filename . "<br/>";
+        $this->db->process_file($basepath,$filename);
     }
 
     function displayOptions($path, $skipFolders, $processExtensions) {

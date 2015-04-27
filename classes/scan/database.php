@@ -5,7 +5,7 @@
  *
  * @author Chris Vaughan
  */
-class Scandatabase extends Database {
+class ScanDatabase extends Database {
 
     const STATE_OK = 0;
     const STATE_RUNNING = 1;
@@ -63,24 +63,22 @@ class Scandatabase extends Database {
 // Returns 0 if no errors, 1 for a file error, or 2 for a database error
 //
 
-    function process_file($filepath) {
-        $utf8_filepath = utf8_encode($filepath);
-        // check if $filename is longer than 255
+    function process_file($basepath, $filepath) {
+        $file = $basepath . $filepath;
+        $utf8_filepath = utf8_encode($file);
+        if (!is_readable($file)) {
+            Logfile::writeError("Unreadable file: $file");
+            return 1;
+        }
+        $hash = hash_file("md5", $file);
+        if (!$hash) {
+            Logfile::writeError("Unable to calculate hash for: $file");
+            return 1;
+        }
+// check if $filename is longer than 255
         if (strlen($filepath) >= 255) {
             Logfile::writeError("Filename is longer than 255 chars");
         }
-
-        if (!is_readable($filepath)) {
-            Logfile::writeError("Unreadable file: $filepath");
-            return 1;
-        }
-
-        $hash = hash_file("md5", $filepath);
-        if (!$hash) {
-            Logfile::writeError("Unable to calculate hash for: $filepath");
-            return 1;
-        }
-
         $query = "Select hash, state From baseline Where filepath = '" . addslashes($filepath) . "'";
         $ok = parent::runQuery($query);
         if (!$ok) {
@@ -225,7 +223,7 @@ class Scandatabase extends Database {
             $text .= "<li>     DELETED files:" . $this->deleted . "</li></ul>" . PHP_EOL;
             $text .= "<p> </p>" . PHP_EOL;
             $text .= "<p>PLEASE review the changes, if you expected these changes then ignore this email</p>" . PHP_EOL;
-            $text .= "<p>This email should also go to Ramblers-webs administrators who will also review the changes</p>" . PHP_EOL;
+            $text .= "<p>This email should also go to Administrators who will also review the changes</p>" . PHP_EOL;
             $text .= "<p>If you have any concerns that your site has been hacked then please raise a Support Issue</p>" . PHP_EOL;
             $text .= "<p> </p>" . PHP_EOL;
             if ($this->new > 0) {

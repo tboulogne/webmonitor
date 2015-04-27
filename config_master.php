@@ -42,7 +42,7 @@ $user = "admin";
 $password = "admin";
 
 $path = " " . $domain;
-$path = "D:Data/UniServerZ/www/";
+$path = "D:/Data/UniServerZ/www/";
 $skipFolders = [""]; // scan all folders
 $skipFolders = ["monitor/Detect Hacked Files via CRON_PHP_files/", "Joomla3/"];
 $skipFolders= NULL;

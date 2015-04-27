@@ -63,7 +63,7 @@ class ScanIterator {
                     }
                     $this->resetNo += 1;
                     $this->no += 1;
-                    $subpath = substr($path, $this->pathLen+1);
+                    $subpath = substr($path, $this->pathLen);
                     $class->$func($this->basePath, $subpath);
                 }
             } else if (is_dir($path) && $value != "." && $value != "..") {

@@ -100,7 +100,7 @@ class ScanIterator {
     }
 
     private Function processFolder($path) {
-        $subpath = substr($path, $this->pathLen + 1);
+        $subpath = substr($path, $this->pathLen);
         if (!isset($subpath)) {
             return true;
         }

@@ -14,7 +14,9 @@ set_time_limit(30);
 // User options - all user options are contained in the config.php file
 //  THIS VERSION WORKES WITH VERSION 1.01 of the CONFIG file
 
-define("VERSION_NUMBER", "2.02");
+define("VERSION_NUMBER", "2.03");
+//  version 2.03
+//             change of order to statements when closing application
 //  version 2.02
 //             recode directory iteration to make it quicker
 //  version 2.01
@@ -120,6 +122,7 @@ if ($scan->Connect()) {
     $text = "Error in running hashscan.php for this domain, consult logfile";
     $mailed = mail($email, "WebMonitor: ERROR SCANNING " . $domain, $text);
 }
+$appStatus->finish();
 Logfile::writeWhen("Logfile closed");
 Logfile::close();
-$appStatus->finish();
+

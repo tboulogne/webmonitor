@@ -39,6 +39,11 @@ class Isapprunning {
         if (file_exists($this->testrunningfile)) {
             unlink($this->testrunningfile);
         }
+        if (file_exists($this->testrunningfile)){
+            Logfile::writeWhen("ERROR: Application file NOT Deleted: ".$this->testrunningfile);
+        }else {
+            Logfile::writeWhen("File deleted: ".$this->testrunningfile);
+        }
     }
 
 }
